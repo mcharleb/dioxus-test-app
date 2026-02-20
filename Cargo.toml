@@ -1,0 +1,19 @@
+[package]
+name = "test-app"
+version = "0.1.0"
+authors = ["mcharleb"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dioxus = { version = "0.7.1", features = [] }
+dioxus-markdown = { git = "https://github.com/rambip/rust-web-markdown" }
+mermaid-rs-renderer = { git = "https://github.com/1jehuang/mermaid-rs-renderer", default-features = false }
+regex = "1.10"
+
+[features]
+default = ["desktop"]
+web = ["dioxus/web"]
+desktop = ["dioxus/desktop"]
+mobile = ["dioxus/mobile"]
