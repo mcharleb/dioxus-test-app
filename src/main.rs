@@ -27,14 +27,11 @@ fn wrap_mermaid_blocks(markdown: &str) -> String {
         let content = caps.get(1).map_or("", |m| m.as_str());
 
         // Format the replacement string, wrapping the content in a <div> block
-        // and also including the original "mermaid" class in a <pre> tag 
+        // and also including the original "mermaid" class in a <pre> tag
         // to maintain compatibility with most Mermaid renderers.
         // Many renderers look for the <pre class="mermaid"> syntax.
         let new_content = mermaid_rs_renderer::render(content).unwrap();
-        format!(
-            r#"<div class="mermaid-wrap">{}</div>"#,
-            new_content
-        )
+        format!(r#"<div class="mermaid-wrap">{}</div>"#, new_content)
     });
 
     // Convert Cow<str> to String
@@ -46,18 +43,49 @@ fn App() -> Element {
     let mermaid_code1 = "graph TD; A-->B; B-->C;";
     let mermaid_code2 = "graph TD; D-->E; E-->F;";
     let svg_image = mermaid_rs_renderer::render(mermaid_code1).unwrap();
-    let initial_text = format!("# Welcome\n```mermaid\n{mermaid_code1}\n```\n```mermaid\n{mermaid_code2}\n```\n").to_string();
+    let initial_text =
+        format!("# Welcome\n```mermaid\n{mermaid_code1}\n```\n```mermaid\n{mermaid_code2}\n```\n")
+            .to_string();
     let mut text = use_signal(|| initial_text.to_string());
     let mut filtered_text = use_signal(|| initial_text.to_string());
     let mut show_first = use_signal(|| true);
+    let mut filename = use_signal(|| "note_000".to_string());
 
+    let save_text_to_file = move || {
+        // If note is empty, nothing to save
+        if text.is_empty() {
+            return;
+        }
+        // Create the new file with the todo text
+        let file_path = format!("{}/{}", ".", filename());
+
+        // Save the content to the file
+        match std::fs::write(&file_path, &text()) {
+            Ok(_) => {}
+            Err(e) => {
+                println!("Error creating file: {}", e);
+            }
+        }
+    };
     rsx! {
         button {
-            onclick: move |_| { text.set("# Today's Note".to_string()); show_first.set(true); },
+            onclick: move |_| {
+               text.set("# Today's Note".to_string());
+               show_first.set(true);
+           },
             "Today's Note"
         }
         button {
-            onclick: move |_| { text.set("# TODO".to_string()); show_first.set(true); },
+            onclick: move |_| {
+                save_text_to_file(filename());
+                text.set("# TODO".to_string());
+                show_first.set(true);
+
+                // Generate a unique filename based on the current timestamp
+                filename.set(format!("todo_{}.txt", chrono::Utc::now().timestamp_millis()));
+                save_text_to_file(filename());
+            },
+            class: "bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600",
             "TODO"
         }
         button {
@@ -67,7 +95,7 @@ fn App() -> Element {
         if *show_first.read() {
                 div {
                     style: "display: flex; gap: 20px; padding: 20px; height: 90vh;",
-                    
+
                     // 1. Markdown Editor (Input)
                     textarea {
                         style: "flex: 1; padding: 10px; font-family: monospace;",
@@ -84,4 +112,3 @@ fn App() -> Element {
         }
     }
 }
-
